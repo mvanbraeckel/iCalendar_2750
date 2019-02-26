@@ -1,0 +1,95 @@
+CIS*2750: Software Systems Development and Integration - A1
+Mitchell Van Braeckel (mvanbrae@uoguelph.ca) 1002297
+Feb 19, 2019
+
+Current Makefile Grade:     10/10
+Current Test Harness Grade: 39/90
+
+NOTE: \r == CR && \n == LF
+
+A1 Regrade Request Explanation:
+
+    1. insertSorted() has an error (NOTE: I used LinkedListAPI.c from by professor)
+
+Should pass tests [1,13], but doesn't due to errors in insertSorted
+
+The first 13 tests (for testing createCalendar using a valid file) all fail due to the following message:
+"FAIL: did not correctly parse a valid file - created object does not match the reference object".
+I know that I correctly parsed the file based on the output of printCalendar, but somehow it fails in the harness.
+After playing around with the test harness, I found that if I simply change all my insertSorted function calls
+to insertFront or insertBack, I pass the first 13 tests as well and get a score of 85/90.
+
+I realized that there must be an issue with the professor's given code (LinkedListAPI.c) for insertSorted.
+After investigating further, I noticed that there is indeed an error in insertSorted. In the function, it
+does not increment the length of the list properly. Since the line of code that does this in insertSorted is
+above the if statements that will call insertFront of insertBack and then return (for the case of inserting at the end 
+or beginning of the list), it double increments the length. If this line is moved after these if statements (i.e. right 
+before the start of the while loop), it fixes the error in insertSorted and will increment the length correctly. When testing
+this fix in the test harness, I receive a score of 85/90. Other than the issue with the list length, the linked list itself
+works perfectly. 
+
+Essentially, the length of the list is incremented incorrectly because it is done prematurely (before the if statements 
+instead of after), thus causing the length to sometimes be incremented twice (NOTE: this always occurs when the list is empty initially).
+In turn, this causes my code to fail in the test harness because, even though I parsed the valid files correctly and my lists contain 
+the same contents, the length variable in the listHead struct (AKA List) does not match when testing if the two lists are the same
+because I used insertSorted for every insert and it first checks if both lengths are the same.
+
+I believe it's reasonable to be regraded for this issue because it's caused by LinkedListAPI.c, which is code from the professor 
+who said that it is working code we can use. Although I'm unsure of his exact wording, I know he essentially said something 
+similar to "here's some working LinkedListAPI.c code that you can use, but you can make your own instead if you really 
+want to." Since I parse the file correctly, yet fail in the test harness due to an error in the list length incrementation of the 
+professor's insertSorted function, I feel that I should receive the extra 46% that I lost in the first 13 test cases. Here, I 
+believe that the score of 85/90 accurately reflects my grade because the code I programmed works successfully in the test harness, 
+but fails purely because of the length incrementation error of insertSorted, which is from the professor's LinkedListAPI.c code.
+
+
+    2. Sub-Test 18.2 for (missing END:VCALENDAR) invalid calendar object test case has an error with the file
+
+I failed test 18 and lost 5% because, in subtest 18.2, I properly returned INV_FILE instead of the expected INV_CAL error.
+
+However, I inspected the "missingEndCal.ics" file in the "invCalendar" folder in "testFiles" and I discovered that there
+is indeed an error with the file that causes it to be invalid. If you look at the end of the file, there is a blank line (i.e.
+a CRLFCRLF character sequence). This blank line causes the INV_FILE return error because valid content lines must either be a 
+comment ("; stuff\r\n") or regular content line ("NAME:description\r\n" or "NAME;description\r\n"), and a blank line satisfies neither case.
+In addition, I have directly confirmed this with the professor and multiple TAs: if a blank line (i.e. CRLFCRLF character sequence) is 
+found, then it's correct to immediately return INV_FILE error because it has higher priority.
+
+When my program is parsing "missingEndCal.ics", after the content line "END:VEVENT\r\n", it sees a blank line because the only characters on
+that line are a CRLF line-ending sequence, thus signifying a blank line. Due to this, it returns the INV_FILE iCal error code instead of  
+INV_CAL because the blank line a higher priority rather than the fact that the "END:VCALENDAR\r\n\" line is missing. Essentially, at this point
+of parsing the file, the code doesn't assume anything (i.e. it still thinks it could be in the middle of parsing the iCal) and continues to look 
+for more content lines but finds an invalid blank line instead. In turn, it returns INV_FILE error code properly, because it does not know whether
+the END:VCALENDAR line is there or not.
+
+If you edit "missingEndCal.ics" and delete the blank line (i.e. so the last line is "END:VEVENT\r\n" instead of "END:VEVENT\r\n" followed by "\r\n"), 
+then my code will return the expected INV_CAL error code. I have done this fix in the test harness and I pass subtest 18.2 receiving a score of 44/90.
+
+Therefore, my program returns the proper error code of INV_CAL if the END:VCALENDAR line is missing. However, for subtest 18.2 that uses "missingEndCal.ics", 
+there is actually a blank line after END:VEVENT, so my code properly returns the INV_FILE error code instead of the expected INV_CAL, and I fail the subtest case.
+
+I believe that it's reasonable to be regraded for this problem because there is actually a blank line in the file that causes the INV_FILE error code 
+to be returned instead of the expected INV_CAL error code because INV_FILE has higher priority and is the first error encountered when parsing the 
+file. By simply removing, the blank line from "missingEndCal.ics", my code will return the expected INV_CAL error code. 
+
+
+SUMMARY: TL;DR
+
+1. insertSorted (code from prof) incorrectly increments list length, thus causing it to fail tests 1-13 - fixing it, or using either other insert instead works
+ - Fix by fixing insertSort and/or changing all insertSort function calls in CalendarParser.c to insertFront or insertBack
+--> Grade would increase 46% for passing the previously failed 13 test cases, making my score change from 39/90 to 85/90
+
+2. subtest 18.2 returns INV_FILE instead of INV_CAL, but there is a blank line, so returning INV_FILE should actually be correct. (removing blank line returns INV_CAL successfully)
+ - Fix by removing blank line in "missingEndCal.ics"
+--> Grade would increase 5% for passing subtest 18.2 (thus all of test 18), making my score change from 39/90 to 44/90.
+
+If both are accepted during the regrade, my score would change from 39/90 to 90/90.
+NOTE: as the Makefile has no problems, the score would remain 10/10
+
+I understand that in the the original submission will be entirely regraded; however, since the first error mentioned was due to insertSorted 
+(given by prof) I believe it's a fair exception to allow insertSorted to be fixed in order to remedy the issue.
+I would be happy to come in and show these things in person if you would like, and I can also provide any testing evidence (screenshots) of this if necessary.
+
+
+Sincerely,
+Mitchell Van Braeckel 1002297
+mvanbrae@uoguelph.ca
