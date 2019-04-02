@@ -1,0 +1,43 @@
+/*
+ * @author Mitchell Van Braeckel (mvanbrae@uoguelph.ca) 1002297
+ * @course CIS*2750: Software Systems Integration and Development - A2
+ * @version 27/02/2019
+ * @brief README submission for A2
+ */
+
+------------ A1 ------------
+
+NOTES:
+ --> (1). Follows A1 modules 1 and 2 (conforms to its specifications, and in turn the "RFC 5545" documentation)
+ --> (2). Calendar file follows format and name requirements and specifications for (1)
+            - since nothing was said, I assumed by default the file must be located in assign1 (same level as makefile)
+ --> (3). "*.c" files go in src folder | "*.o" and "*.so" files go in bin folder | "*.h" files go in include folder | makefile and readme and "*.ics" files go in assign1
+            - (like in A1 module 1 submission structure guidelines)
+ --> (4). As said by professor, Calendar pointer being passed into createCalendar must not be allocated
+            - (also, apparently w/ some research, checking if it has been uninitialized or allocated when it is passed is impossible)
+ --> (5). As stated, original A1 code should not have been altered for the purposes of creating A2 if it already worked perfectly (as mine did)
+
+------------ A2 ------------
+
+Since no submission instructions were provided, I'm going to assume it's the exact same as last time, but using "A2" instead of "A1" and "assign2" instead of "assign1"
+
+NOTES:
+ --> (1). COPY ALL notes and assumptions from A1 here, as A1 is used for A2
+ --> (2). Follows A2 modules 1, 2, and 3 (conforms to its specifications, and in turn the "RFC 5545" documentation)
+ --> (3). Any assumptions made (eg. for what to error return when / in what order, or about specific requirement specifications, etc.)
+            have been confirmed with multiple TAs and/or professor himself
+             - I checked forums regularly, and asked professor and TAs many question as per usual (I also have scrap paper notes for questions asked, and answers received)
+     --> EMPHASIS: unless otherwise explicitly specified, like most parts of the assignment, proper runs rely on the main doing things in proper sequence
+                    (i.e. validating first before using functions for A2 etc.)
+     --> EMPHASIS: since we do not check the propDescr while reading a ".ics" file AND we can parse by either : or ; delim (i.e "tag:stuff" or "tag;stuff"),
+                    when writing, it doesn't matter what we use to delimit (confirmed w/ multiple TAs)
+
+Assumption:
+    1. With regards to writing JSON strings, when writing a string value, if a " appears, then we must escape it and write \" so the JSON is valid and can be parsed properly later
+        Due to this, I also do the same for backslashes (i.e. \ written as \\ so it can be parsed properly, otherwise the JSON wouldn't be valid)
+        --> In continuation of this, I assume that these are the only escaped characters we need to account for when reading/parsing JSON strings ourselves
+
+NOTE: The LinkedListAPI.h and CalendarParser.h files used while creating my *.c files are the ones downloaded from moodle A2.
+            I assume that these have not been altered since first being posted.
+            (As professor and TAs have said, and announcements are made about any confusions, rather than changing it)
+     --> Yes, I have the updated LinkedListAPI.c w/ the fix for insertSorted(). I also have the most recently posted CalendarParser.h that I used while programming A2.

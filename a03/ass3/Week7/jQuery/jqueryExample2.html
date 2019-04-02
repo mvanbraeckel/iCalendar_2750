@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Test web page on node.js</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="author" content="">
+    <!-- Load jquery, bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <!-- Custom CSS -->
+    <style type="text/css">
+        html {
+            width: 60%;
+            height: 100%;
+            min-height: 100%;
+            margin: 0 auto;
+            font-size: 16px;
+            background-color: #FFFFFF;
+        }
+
+        body {
+            height: 100%;
+            min-height: 100%;
+            line-height: 1.75;
+            background-color: #FFFFFF;
+        }
+        a:link:hover {
+            -webkit-transition: all 0.3s ease;
+            -moz-transition: all 0.3s ease;
+            transition: all 0.3s ease;
+            text-decoration: underline;
+            cursor: pointer;
+            cursor: hand;
+        }
+        select option {
+            border: none;
+        }
+        input[type=text], input[type=submit], button {
+            border: none;
+        }
+        input[type=submit], button {
+            cursor: pointer;
+            cursor: hand;
+        }
+        a:link {
+            text-decoration: none;
+        }
+        button::-moz-focus-inner {
+            border: 0;
+        }
+        button, input {
+            outline: none;
+        }
+        @media(max-width: 900px) {
+
+            html {
+                font-size: 14px !important;
+                width: 80% !important;
+            }
+
+            .datetime {
+                float: none !important;
+            }
+        }
+        @media(max-width: 480px) {
+            html {
+                font-size: 12px !important;
+                width: 90% !important;
+            }
+        }
+        @media(max-width: 320px) {
+            html {
+                font-size: 12px !important;
+                width: 100% !important;
+            }
+        }
+    </style>
+    <!-- Custom CSS End -->
+</head>
+<body>
+    <header>
+    </header>
+    Data loaded when the user clicks the button:
+        <div id="data1">
+        </div>
+        <div>
+            <button id="getDate" type="button" class="btn">Get Date</button>
+        </div>
+    <script type="text/javascript">
+        //Custom functions go here
+        function getCurrentDate(){
+            let currDate = new Date();
+            var day = currDate.getDate();
+            var month = currDate.getMonth()+1; //Months a 0-indexed
+            var year = currDate.getFullYear();
+
+            if(day < 10) {
+                day = '0'+day;
+            } 
+
+            if(month < 10) {
+                month = '0'+month;
+            } 
+
+            let fullDate = month + '/' + day + '/' + year;
+            return fullDate;
+        }
+
+        // Put all render logic here (event listeners...)
+        $(document).ready(function() {
+            console.log("page loaded");
+            //Associate a callback with the HTML button by accessing an HTML element through the DOM model
+            document.getElementById('getDate').onclick = function () {
+                $('#data1').html("Current date is "+getCurrentDate());
+                console.log("Dynamic stuff happened");
+            };
+        });
+    </script>
+</body>
+</html>
