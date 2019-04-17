@@ -1,0 +1,11 @@
+{
+  "name": "dbTest",
+  "version": "1.0.0",
+  "description": "CIS2750 W18 - JavaScript / MySQL demo",
+  "main": "dbTest.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mysql": "^2.15.0"
+  }
+}

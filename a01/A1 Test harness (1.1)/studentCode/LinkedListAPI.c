@@ -243,7 +243,6 @@ void insertSorted(List* list, void* toBeAdded) {
 	}
 	
 	Node* currNode = list->head;
-	(list->length)++;
 	
 	while (currNode != NULL){
 		if (list->compare(toBeAdded, currNode->data) <= 0){
@@ -261,7 +260,8 @@ void insertSorted(List* list, void* toBeAdded) {
 			newNode->previous = currNode->previous;
 			currNode->previous->next = newNode;
 			currNode->previous = newNode;
-		
+			(list->length)++;
+	
 			return;
 		}
 	

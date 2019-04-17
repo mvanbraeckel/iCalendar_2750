@@ -50,4 +50,36 @@ Property* createProperty(char* line, int delimIndex);
 int strcmpic(const char *p1, const char *p2);
 int strncmpic(const char *s1, const char *s2, size_t n);
 
+
+void writePropertyList(FILE *fp, List* propList);
+void writeEventList(FILE *fp, List* evList);
+void writeAlarmList(FILE *fp, List* almList);
+
+ICalErrorCode validateICal(const Calendar *obj);
+ICalErrorCode validateEvent(const Event *ev);
+ICalErrorCode validateAlarm(const Alarm *alm);
+bool validateDT(const DateTime dt);
+
+bool searchPropertyList(const void* first, const void* second);
+
+int ishex(char c);
+
+Event* cloneEvent(Event *tobeCopied);
+
+
+// A3 JS wrappers
+char* a3getFileLogPanelTableInfo(char* dirFilename);
+char* a3getEventList(char* dirFilename);
+char* a3getPropertyList(char *dirFilename, int eventNum);
+char* a3getAlarmList(char *dirFilename, int eventNum);
+char* a3CreateCalendar(char *dirFilename, char* calAsJSON, char* eventAsJSON);
+char* a3AddEventToCalendar(char *dirFilename, char* eventAsJSON);
+
+// extra for a3
+char* alarmToJSON(const Alarm* alarm);
+char* alarmListToJSON(const List* alarmList);
+char* propertyToJSON(const Property* property);
+char* propertyListToJSON(const List* propertyList);
+char* stringToJSON(const char* str);
+
 #endif

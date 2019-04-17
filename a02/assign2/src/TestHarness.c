@@ -21,8 +21,8 @@ int main(int argc, char **argv) {
     //ICalErrorCode wasReturned = createCalendar("testCalEvtProp.ics", &myCal);
     //ICalErrorCode wasReturned = createCalendar("testCalSimpleNoUTC.ics", &myCal);
     //ICalErrorCode wasReturned = createCalendar("testCalSimpleUTCComments.ics", &myCal);
-    //ICalErrorCode wasReturned = createCalendar("testCalEvtPropAlm.ics", &myCal);
-    ICalErrorCode wasReturned = createCalendar("megaCalFolded1.ics", &myCal);
+    ICalErrorCode wasReturned = createCalendar("testCalEvtPropAlm.ics", &myCal);
+    //ICalErrorCode wasReturned = createCalendar("megaCalFolded1.ics", &myCal);
 
     //ICalErrorCode wasReturned = createCalendar("missingEndCal.ics", &myCal);
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
         printf("did not writeCalendar because validateCalendar was not OK\n");
     }
     
-    // ===================
+    /*// ===================
 
     // cal + JSON testing
 
@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
     } else {
         printf("writtenCalWAE not null\n");
     }
-    deleteCalendar(writtenCalWAE);
+    deleteCalendar(writtenCalWAE);*/
 
 
     deleteCalendar(myCal);
@@ -314,6 +314,26 @@ int main(int argc, char **argv) {
         printf("writtenCal not null\n");
     }
     deleteCalendar(writtenCal);
+
+    // ===================
+
+    Calendar *tempCal = JSONtoCalendar("{\"version\":3.456,\"prodID\":\"proIDval\"}");
+    if(tempCal != NULL) {
+        printf("\ntesting JSONtoCalendar #1: tempCal from created JSON being printed:\n\nversion = %f   |   prodID = '%s'\n", tempCal->version, tempCal->prodID);
+        deleteCalendar(tempCal);
+    } else {
+        printf("\ntesting JSONtoCalendar #1: tempCal from created JSON was null\n");
+    }
+
+    Event *tempEv = JSONtoEvent("{\"UID\":1}");
+    if(tempEv != NULL) {
+        printf("\ntesting JSONtoEvent #1: tempEv from created JSON being printed:\n\nUID = '%s'\n", tempEv->UID);
+        deleteEvent(tempEv);
+    } else {
+        printf("\ntesting JSONtoEvent #1: tempEv from created JSON was null\n");
+    }
+
+    // ===================
 
     /*NOTE: these are all true
     if(CR == '\r') {

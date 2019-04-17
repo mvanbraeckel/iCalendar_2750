@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>VB CalendarApp</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="CHANGE ME">
+    <meta name="keywords" content="CHANGE ME">
+    <meta name="author" content="CHANGE ME">
+    <!-- Load jquery, bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="/style.css">
+    <!-- Custom CSS End -->
+</head>
+<body id="theBody">
+
+    <br>
+
+    <div class="round-border shadow">
+        <h1 class="blacked">iCalendar File Manager</h1>
+    </div>
+
+    <hr class="h1hr">
+    
+    <div id="statusPanel" class="round-border shadow no-wrap">
+
+        <h1>Status Panel</h1>
+        <hr class="h1hr">
+
+        <!-- <p>Display box --scrollable H & V, newest messages at bottom, it autoscrolls for user, needs clear button</p> -->
+        <div id="divStatusDisplay" class="scrollable status-panel">
+            <p id="pStatusDisplay"></p>
+        </div>
+
+        <!-- Clear Button -->
+        <form ref="clearform" id="clearform">
+            <div class="form-group clear-button">
+                <input type="button" class="btn btn-dark btn-block" id="clearButton" value="Clear">
+            </div>
+        </form>
+    </div>
+
+    <div class="round-border shadow">
+
+        <h1>File Log Panel</h1>
+        <hr class="h1hr">
+
+        <!-- <p>File Name (click to download) | Version | Product ID | Number of Events | Number of Properties</p> -->
+        <div class="scrollable table" id="divFileLogTable">
+            <table id="tableFileLog" class="file-log-table">
+                <thead>
+                    <tr>
+                        <th scope="col" title="(Click to download)">File Name<br>(download)</th>
+                        <th scope="col">Version</th>
+                        <th scope="col">Product ID</th>
+                        <th scope="col">Events</th>
+                        <th scope="col">Properties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- filled by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <hr class="myhr">
+
+        <!-- Upload File = Browse and Select a File, Upload Button -->
+        <form ref="uploadform" id="uploadform">
+            <div class="clear-button no-background">
+                <label for="filebrowser">Choose file to upload:  </label>
+                <input type="file" id="filebrowser" name="filebrowser" accept=".ics" required>
+            </div>
+            <div class="form-group clear-button">
+                <input type="submit" class="btn btn-info btn-block" id="uploadButton" value="Upload">
+            </div>
+        </form>
+    </div>
+
+    <div class="round-border center-align shadow">
+
+        <h1>Calendar View Panel</h1>
+        <hr class="h1hr">
+        
+        <!-- Drop-Down List of all iCal File Names currently stored on the server-->
+        <select id="selectCalView" class="drop-down-list center-align">
+            <!-- <option value="testCalSimpleUTC.ics">testCalSimpleUTC.ics</option>
+            <option value="testCalSimpleUTC2.ics">testCalSimpleUTC2.ics</option>
+            <option value="testCalSimpleUTC3.ics">testCalSimpleUTC3.ics</option> -->
+        </select>
+
+        <!-- <p>Event No. | Start Date (YYYY/MM/DD) | Start Time | Summary | Props | Alarms</p> -->
+        <div class="scrollable table" id="divCalViewTable">
+            <table id="tableCalView" class="cal-view-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Event No.</th>
+                        <th scope="col" class="no-wrap">Start Date<br>(YYYY-MM-DD)</th>
+                        <th scope="col">Start Time</th>
+                        <th scope="col">Summary</th>
+                        <th scope="col" title="(Click to View)">Properties<br>(View)</th>
+                        <th scope="col" title="(Click to View)">Alarms<br>(View)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- filled by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- must be able to perform these actions, implement however you want -->
+        <!-- <p>Show Alarms = click the event's #of alarms value, displays the info in Status Panel</p>
+        <p>Extract Optional Props = click the event's #of props value, displays all properties (including optional props) in the Status Panel</p> -->
+
+        <hr class="myhr">
+        
+        <!-- Also, CREATE EVENT = Add event to a calendar file already in server -->
+
+        <h1 title="Creates and adds an event to the selected calendar shown above">Create Event</h1>
+        
+        <div class="scrollable no-background" title="Creates and adds an event to the selected calendar shown above">
+            <!-- need multiple inputs for all required things for an event (4 text fields, 1 check box) -->
+            <!-- UID, DTSTAMP, DTSTART, (optional) SUMMARY (use checkbox for including or not) -->
+            <!-- UID and SUMMARY: text input = must not be empty string (UID <1000 chars) -->
+            <!-- use regex for date-time text input -->
+            <form ref="createeventform" id="createeventform">
+                <div class="form-group scrollable float-align no-wrap no-background">
+                    <table class="no-border">
+                        <tr>
+                            <td>
+                                <label for="txtUID">UID:</label>
+                                <input type="text" minlength="1" maxlength="999" id="txtUID" class="width-90" required>
+                            </td>
+                            <td title="(Optional)">
+                                <label for="txtSUMMARY">Summary:</label>
+                                <input type="text" id="txtSUMMARY" class="width-65">
+                                <input type="checkbox" id="cbSUMMARY" value="Include">
+                                <label for="cbSUMMARY">Include</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="width-shrink">
+                                <label for="dateDTSTAMP">Date-Time Stamp:</label>
+                                <input type="date" id="dateDTSTAMP" class="width-date" pattern="\d\d\d\d-\d\d-\d\d" maxlength="10" required> -
+                                <input type="text" minlength="8" maxlength="8" id="txtTimeDTSTAMP" class="width-small" placeholder="hh:mm:ss" 
+                                        pattern="[0-2][0-9]:[0-6][0-9]:[0-6][0-9]" required>
+                                <input type="checkbox" id="cbUTCDTSTAMP" value="UTC">
+                                <label for="cbUTCDTSTAMP">UTC</label>
+                            </td>
+                            <td class="width-shrink">
+                                <label for="dateDTSTART">Date-Time Start:</label>
+                                <input type="date" id="dateDTSTART" class="width-date" pattern="\d\d\d\d-\d\d-\d\d" maxlength="10" required> -
+                                <input type="text" minlength="8" maxlength="8" id="txtTimeDTSTART" class="width-small" placeholder="hh:mm:ss" 
+                                        pattern="[0-2][0-9]:[0-6][0-9]:[0-6][0-9]" required>
+                                <input type="checkbox" id="cbUTCDTSTART" value="UTC">
+                                <label for="cbUTCDTSTART">UTC</label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Add Event Button -->
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-info btn-block" id="addEventButton" value="Add Event">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="round-border shadow">
+
+        <h1 title="Creates a new calendar">Create Calendar</h1>
+
+        <hr class="h1hr" title="Creates a new calendar">
+
+        <div class="scrollable no-background" title="Creates a new calendar">
+            <!-- this is same as add event (needs at least one event), just also need its filename, VERSION, and PRODID (<1000) -->
+            <form ref="createcalform" id="createcalform">
+                <div class="form-group scrollable float-align no-wrap no-background">
+                    <table class="no-border">
+                        <tr>
+                            <td colspan="2">
+                                <label for="txtFileNamecc">File Name:</label>
+                                <input type="text" minlength="1" id="txtFileNamecc" class="width-90" placeholder=".ics" pattern="(\S)(.)*(\.ics)" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="txtPRODIDcc">Product ID:</label>
+                                <input type="text" minlength="1" maxlength="999" id="txtPRODIDcc" class="width-80" required>
+                            </td>
+                            <td>
+                                <label for="txtNumVERSIONcc">Version:</label>
+                                <input type="number" step=any min="1E-100" id="txtNumVERSIONcc" class="width-80" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="txtUIDcc">UID:</label>
+                                <input type="text" minlength="1" maxlength="999" id="txtUIDcc" class="width-90" required>
+                            </td>
+                            <td title="(Optional)">
+                                <label for="txtSUMMARYcc">Summary:</label>
+                                <input type="text" id="txtSUMMARYcc" class="width-65">
+                                <input type="checkbox" id="cbSUMMARYcc" value="Include">
+                                <label for="cbSUMMARYcc">Include</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="width-shrink">
+                                <label for="dateDTSTAMPcc">Date-Time Stamp:</label>
+                                <input type="date" id="dateDTSTAMPcc" class="width-date" pattern="\d\d\d\d-\d\d-\d\d" maxlength="10" required> -
+                                <input type="text" minlength="8" maxlength="8" id="txtTimeDTSTAMPcc" class="width-small" placeholder="hh:mm:ss" 
+                                        pattern="[0-2][0-9]:[0-6][0-9]:[0-6][0-9]" required>
+                                <input type="checkbox" id="cbUTCDTSTAMPcc" value="UTC">
+                                <label for="cbUTCDTSTAMPcc">UTC</label>
+                            </td>
+                            <td class="width-shrink">
+                                <label for="dateDTSTARTcc">Date-Time Start:</label>
+                                <input type="date" id="dateDTSTARTcc" class="width-date" pattern="\d\d\d\d-\d\d-\d\d" maxlength="10" required> -
+                                <input type="text" minlength="8" maxlength="8" id="txtTimeDTSTARTcc" class="width-small" placeholder="hh:mm:ss" 
+                                        pattern="[0-2][0-9]:[0-6][0-9]:[0-6][0-9]" required>
+                                <input type="checkbox" id="cbUTCDTSTARTcc" value="UTC">
+                                <label for="cbUTCDTSTARTcc">UTC</label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Create Calendar Button -->
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-info btn-block" id="createCalButton" value="Create Calendar">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="round-border shadow">
+
+        <h1 title="Login to the database">Login to Database</h1>
+
+        <hr class="h1hr" title="Login to the database">
+
+        <div class="scrollable no-background" title="Login to the database">
+            <!-- need text input for username, need password text input for password, need text input for database name -->
+            <form ref="loginform" id="loginform">
+                <div class="form-group scrollable float-align no-wrap no-background">
+                    <table class="no-border">
+                        <tr>
+                            <td colspan="2">
+                                <label for="txtDBName">Database Name:</label>
+                                <input type="text" minlength="1" id="txtDBName" class="width-80" name="dbLogin" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="txtUsername">Username:</label>
+                                <input type="text" minlength="1" id="txtUsername" class="width-65" name="dbLogin" required>
+                            </td>
+                            <td>
+                                <label for="pwdPassword">Password:</label>
+                                <input type="password" minlength="1" id="pwdPassword" class="width-65" name="dbLogin" required>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Database Login Button -->
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-primary btn-block" id="loginButton" value="Login" name="dbLogin" >
+                </div>
+            </form>
+        </div>
+
+        <hr class="h1hr"><br>
+
+        <h1 title="Database Functionality">Database Functionality</h1>
+
+        <hr class="h1hr">
+
+        <!-- Database Functionality: Buttons x3 -->
+        <div class="no-background center-align">
+            <!-- Store All Files Button --
+            <form ref="storeallfilesform" id="storeallfilesform">
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-info btn-block" id="storeAllFilesButton" value="Store All Files">
+                </div>
+            </form>
+            <!-- Clear All Data Button --
+            <form ref="clearalldataform" id="clearalldataform">
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-danger btn-block" id="clearAllDataButton" value="Clear All Data">
+                </div>
+            </form>
+            <!-- Display DB Status Button --
+            <form ref="displayDBstatusform" id="displayDBstatusform">
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-info btn-block" id="displayDBStatusButton" value="Display DB Status">
+                </div>
+            </form> -->
+            <input type="button" class="clear-button btn btn-secondary float-align width-triple-btn" id="storeAllFilesButton" value="Store All Files" name="db" disabled>
+            <input type="button" class="clear-button btn btn-danger float-align width-triple-btn" id="clearAllDataButton" value="Clear All Data" name="db" disabled>
+            <input type="button" class="clear-button btn btn-dark float-align width-triple-btn" id="displayDBStatusButton" value="Display DB Status" name="db" disabled>
+        </div>
+
+        <hr class="h1hr">
+
+        <br>
+        <h2 title="Database Queries">Database Queries</h2>
+
+        <hr class="h1hr">
+
+        <!-- Database Execute Query Functionality (BTN + 6 CBs) -->
+        <div class="scrollable no-background center-align">
+            <!-- Need at least one radio button selected -->
+            <form ref="executequeryform" id="executequeryform">
+                <input type="radio" id="rdoQuery1" value="rdoQuery1" name="rdoQueries" required disabled>
+                <label for="rdoQuery1">Display all events sorted by start date</label>&nbsp&nbsp&nbsp
+
+                <input type="radio" id="rdoQuery2" value="rdoQuery2" name="rdoQueries" disabled>
+                <label for="rdoQuery2">Display the events for a specific file</label>&nbsp&nbsp&nbsp
+
+                <input type="radio" id="rdoQuery3" value="rdoQuery3" name="rdoQueries" disabled>
+                <label for="rdoQuery3">Display all potentially conflicting events</label>&nbsp&nbsp&nbsp
+
+                <br>
+
+                <input type="radio" id="rdoQuery4" value="rdoQuery4" name="rdoQueries" disabled>
+                <label for="rdoQuery4">Display all alarms with a specified action</label>&nbsp&nbsp&nbsp
+
+                <input type="radio" id="rdoQuery5" value="rdoQuery5" name="rdoQueries" disabled>
+                <label for="rdoQuery5">Display all events with a specified location</label>&nbsp&nbsp&nbsp
+
+                <input type="radio" id="rdoQuery6" value="rdoQuery6" name="rdoQueries" disabled>
+                <label for="rdoQuery6">Display all events with a specified organizer</label>&nbsp&nbsp&nbsp
+                
+                <br>
+
+                <!-- needs a text input field -->
+                <input type="text" minlength="1" id="txtQueryInput" class="clear-button width-90 center-align" placeholder="Enter query search here" name="rdoQueries" disabled>
+
+                <!-- Database Execute Query Button -->
+                <div class="form-group clear-button">
+                    <input type="submit" class="btn btn-info btn-block" id="executeQueryButton" value="Execute Query" name="db" disabled>
+                </div>
+            </form>
+        </div>
+
+        <hr class="h1hr">
+
+        <!-- Table to Display Query Results -->
+        <div class="scrollable table" id="divQueryTable">
+            <table id="queryTable">
+                <thead>
+                    <tr>
+                        <th scope="col" title="(Click to download)">File Name<br>(download)</th>
+                        <th scope="col">Version</th>
+                        <th scope="col">Product ID</th>
+                        <th scope="col">Events</th>
+                        <th scope="col">Properties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- filled by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <hr class="myhr">
+
+    </div>
+
+    <br>
+    <!-- Leave me at the bottom of body -->
+    <script src="/index.js"></script>
+</body>
+</html>

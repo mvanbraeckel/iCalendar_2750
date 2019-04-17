@@ -745,40 +745,6 @@ char* printError(ICalErrorCode err) {
  	fileName - the name of the output file
  **/
 ICalErrorCode writeCalendar(char* fileName, const Calendar* obj) {
-	// check iCal exists
-	if(obj == NULL) {
-		return WRITE_ERROR;
-	}
-	// check file name: null, empty, '.ics'
-	if(fileName == NULL || strcmp(fileName, "") == 0) {
-		return WRITE_ERROR;
-
-	} else {
-		int length = strlen(fileName);
-		if(length < 5 || fileName[length-4] != '.' || fileName[length-3] != 'i' || fileName[length-2] != 'c' || fileName[length-1] != 's') {
-			return WRITE_ERROR;
-		}
-	}
-
-	FILE *fp = fopen(fileName, "w");
-	// write file if it exists
-	if(fp == NULL) {
-		return WRITE_ERROR;
-	} 
-	
-	// write calendar to file
-	fprintf(fp, "BEGIN:VCALENDAR\r\n");
-
-	fprintf(fp, "VERSION:%f\r\n", obj->version);
-	fprintf(fp, "PRODID:%s\r\n", obj->prodID);
-	// write all iCal properties
-	writePropertyList(fp, obj->properties);
-	// write all iCal events
-	writeEventList(fp, obj->events);
-
-	fprintf(fp, "END:VCALENDAR\r\n");
-	
-	fclose(fp);
 	return OK;
 }
 
@@ -789,41 +755,8 @@ ICalErrorCode writeCalendar(char* fileName, const Calendar* obj) {
  *@param obj - a pointer to a Calendar struct
  **/
 ICalErrorCode validateCalendar(const Calendar* obj) {
-	// check iCal is valid (version, prodid, iCal prop list)
-	ICalErrorCode isCalValid = validateICal(obj);
-	if(isCalValid != OK) {
-		return isCalValid;
-	}
-
-	// validate all events (in event list) (uid, dtstamp, dtstart, ev prop list)
-	ListIterator evPropIter = createIterator(obj->events);
-	Event* ev;
-	while( (ev = nextElement(&evPropIter)) != NULL ) {
-		// check if the event is valid
-		ICalErrorCode isEvValid = validateEvent(ev);
-		if(isEvValid != OK) {
-			return isEvValid;
-		}
-	}
-
-	// validate all (assume only audioprop) alarms in each event (alarm lists in event list events) (action, trigger, alm prop list)
-	evPropIter = createIterator(obj->events);
-	while( (ev = nextElement(&evPropIter)) != NULL ) {
-		// check the alarm list of every event
-		ListIterator almPropIter = createIterator(ev->alarms);
-		Alarm* alm;
-		while( (alm = nextElement(&almPropIter)) != NULL ) {
-			// check if the alarm is valid
-			ICalErrorCode isAlmValid = validateAlarm(alm);
-			if(isAlmValid != OK) {
-				return isAlmValid;
-			}
-		}
-	}
-
 	return OK;
 }
-
 
 
 // *********************************************************************

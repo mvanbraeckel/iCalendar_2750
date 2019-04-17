@@ -340,7 +340,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 					ACTION = false;
 					TRIGGER = false;
 					// add it to the list
-					insertBack(currEvent->alarms, currAlarm);
+					insertSorted(currEvent->alarms, currAlarm);
 					currAlarmAdded = true;
 
 					//printf("now out of alarm\n");
@@ -367,7 +367,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 					return INV_ALARM;
 				}
 				// create and add alarm property
-				insertBack(currAlarm->properties, createProperty(lines[i], delimIndex));
+				insertSorted(currAlarm->properties, createProperty(lines[i], delimIndex));
 			}
 			
 		} else if(inEvent) { // ----------------------------------------- parse event -----------------------------------------
@@ -441,7 +441,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 					DTSTAMP = false;
 					DTSTART = false;
 					// add it to the list
-					insertBack(myCal->events, currEvent);
+					insertSorted(myCal->events, currEvent);
 					currEventAdded = true;
 
 					//printf("now out of event\n");
@@ -468,7 +468,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 					return INV_EVENT;
 				}
 				// create and add event property
-				insertBack(currEvent->properties, createProperty(lines[i], delimIndex));
+				insertSorted(currEvent->properties, createProperty(lines[i], delimIndex));
 			}
 		
 		} else if(inCal) {  // ------------------------------------------ parse iCal -----------------------------------------
@@ -575,7 +575,7 @@ ICalErrorCode createCalendar(char* fileName, Calendar** obj) {
 					return INV_CAL;
 				}
 				// create and add iCal property
-				insertBack(myCal->properties, createProperty(lines[i], delimIndex));
+				insertSorted(myCal->properties, createProperty(lines[i], delimIndex));
 			}
 
 		} // ----------------------------------------- end parse iCal -----------------------------------------
@@ -859,6 +859,7 @@ char* dtToJSON(DateTime prop) {
 	}
 	return toReturn;
 	// "{\"date\":\"dateVal\",\"time\":\"timeVal\",\"isUTC\":utcVal}"
+	// "{\"date\":\"00001122\",\"time\":\"001122\",\"isUTC\":true}" min length (max length = +1)
 }
 
 /** Function to converting an Event into a JSON string
@@ -905,26 +906,11 @@ char* eventToJSON(const Event* event) {
 			sumVal = malloc(1);
 			sumVal[0] = '\0';
 		} else {
-			// count number of backslashes
-			int len = strlen(summaryProp->propDescr);
-			int c = 0;
-			for(int i = 0; i < len; i++) {
-				if(summaryProp->propDescr[i] == '\\' || summaryProp->propDescr[i] == '\"') c++;
-			}
-			// create mem, add one char at a time to account for escaping chars
-			sumVal = calloc(len+c+1, sizeof(char));
-			int j = 0;
-			for(int i = 0; i < len; i++) {
-				if(summaryProp->propDescr[i] == '\\' || summaryProp->propDescr[i] == '\"') {
-					sumVal[j++] = '\\';
-				}
-				sumVal[j++] = summaryProp->propDescr[i];
-			}
-			sumVal[j] = '\0';
+			sumVal = stringToJSON(summaryProp->propDescr);
 		}
 	}
 
-	// create JSON string [51 + dtval len + 20 + 20 + sumVal len = ~100 + (2 string len)]
+	// create JSON string [51 + DTval len + 20 + 20 + sumVal len = ~100 + (2 string len)]
 	toReturn = malloc(100 + strlen(DTval) + strlen(sumVal));
 	sprintf(toReturn, "{\"startDT\":%s,\"numProps\":%d,\"numAlarms\":%d,\"summary\":\"%s\"}", DTval, propVal, almVal, sumVal);
 	toReturn[strlen(toReturn)] = '\0';
@@ -1005,28 +991,8 @@ char* calendarToJSON(const Calendar* cal) {
 	int verVal = (int)(cal->version);
 
 	// get product ID
-	char* prodIDVal = NULL;
-	if(cal->prodID == NULL) {
-		prodIDVal = malloc(1);
-		prodIDVal[0] = '\0';
-	} else {
-		// count number of backslashes
-		int len = strlen(cal->prodID);
-		int c = 0;
-		for(int i = 0; i < len; i++) {
-			if(cal->prodID[i] == '\\' || cal->prodID[i] == '\"') c++;
-		}
-		// create mem, add one char at a time to account for escaping chars
-		prodIDVal = calloc(len+c+1, sizeof(char));
-		int j = 0;
-		for(int i = 0; i < len; i++) {
-			if(cal->prodID[i] == '\\' || cal->prodID[i] == '\"') {
-				prodIDVal[j++] = '\\';
-			}
-			prodIDVal[j++] = cal->prodID[i];
-		}
-		prodIDVal[j] = '\0';
-	}
+	char* prodIDVal = NULL;							// need to free
+	prodIDVal = stringToJSON(cal->prodID);
 
 	// get #of properties
 	int propVal = 2;
@@ -1161,12 +1127,16 @@ Event* JSONtoEvent(const char* str) {
 	}
 	// make sure it has valid form (min length, proper encompassment)
 	int len = strlen(str);
-	if(len < 11 || str[0] != '{' || str[len-1] != '}') {
+	if(len < 102 || str[0] != '{' || str[len-1] != '}') {
 		return NULL;
 	}
 
 	// declare variables
 	char uidStr[len];
+	char dtstampValStr[len];
+	char dtstartValStr[len];
+	char includeSumValStr[len];
+	char sumValStr[len];
 
 	int i = 8;
 	// get UID (min length, make sure it has proper tag)
@@ -1198,20 +1168,178 @@ Event* JSONtoEvent(const char* str) {
 	}
 	uidStr[j] = '\0';
 	// make sure it parsed something (not too big), and that it stopped bc it was the end (i.e. \",},\0 chars are next)
-	if( uidStr == NULL || strcmp(uidStr, "") == 0 || strlen(uidStr) >= 1000 ||
-			i+2 > len || str[i] != '\"' || str[i+1] != '}' || str[i+2] != '\0' ) {
+	if( uidStr == NULL || strcmp(uidStr, "") == 0 || strlen(uidStr) >= 1000 ) {
 		return NULL;
 	}
 
-	// create and return event w/ UID, creationDateTime uninit, startDateTime uninit, prop list init but empty, alm list init but empty
+	// get dtstamp (min length, make sure it has proper tag)
+	if(i+13 >= len-2 || strncmp(str+i, "\",\"DTSTAMP\":\"", 13) != 0) {
+		return NULL;
+	}
+	i += 13;
+	j = 0;
+	// parse char-by-char
+	while( i < len && str[i] != '\"') {
+		// don't need to account for '\' and line folding
+		dtstampValStr[j++] = str[i++];
+	}
+	dtstampValStr[j] = '\0';
+	// make sure it parsed something (not too big), and it wasn't the last char before '}' --accounted for in next value check
+	if( dtstampValStr == NULL || strcmp(dtstampValStr, "") == 0 || strlen(dtstampValStr) > 16 ) {
+		return NULL;
+	}
+
+	// extract it into a date-time struct (use A1 parsing), then make sure it worked
+	DateTime *dtstampVal = NULL;
+	dtstampVal = malloc(sizeof(DateTime));
+	ICalErrorCode dtstampValErr = parseDT(false, dtstampValStr, dtstampVal);
+	
+	// properly set the boolean isUTC value of the date-time struct
+	if(dtstampValStr[strlen(dtstampValStr)-1] == 'Z') {
+		dtstampVal->UTC = true;
+	} else {
+		dtstampVal->UTC = false;
+	}
+
+	if(dtstampValErr != OK) {
+		return NULL;
+	}
+
+	// get dtstart (min length, make sure it has proper tag)
+	if(i+13 >= len-2 || strncmp(str+i, "\",\"DTSTART\":\"", 13) != 0) {
+		return NULL;
+	}
+	i += 13;
+	j = 0;
+	// parse char-by-char
+	while( i < len && str[i] != '\"') {
+		// don't need to account for '\' and line folding
+		dtstartValStr[j++] = str[i++];
+	}
+	dtstartValStr[j] = '\0';
+
+	// make sure it parsed something (not too big), and it wasn't the last char before '}' --accounted for in next value check
+	if( dtstartValStr == NULL || strcmp(dtstartValStr, "") == 0 || strlen(dtstartValStr) > 16 ) {
+		return NULL;
+	}
+	// extract it into a date-time struct (use A1 parsing), then make sure it worked
+	DateTime *dtstartVal = NULL;
+	dtstartVal = malloc(sizeof(DateTime));
+	ICalErrorCode dtstartValErr = parseDT(false, dtstartValStr, dtstartVal);
+
+	if(dtstartValStr[strlen(dtstartValStr)-1] == 'Z') {
+		dtstartVal->UTC = true;
+	} else {
+		dtstartVal->UTC = false;
+	}
+	
+	if(dtstartValErr != OK) {
+		return NULL;
+	}
+
+	// get whether summary should be included or not
+	if(i+19 >= len-2 || strncmp(str+i, "\",\"includeSUMMARY\":", 19) != 0) {
+		return NULL;
+	}
+	i += 19;
+	j = 0;
+	// parse char-by-char (looking for 'true' or 'false')
+	while( i < len && str[i] != ',') {
+		// don't need to account for '\' and line folding
+		includeSumValStr[j++] = str[i++];
+	}
+	includeSumValStr[j] = '\0';
+
+	// make sure it parsed something (not too big), and it wasn't the last char before '}' --accounted for in next value check
+	if( includeSumValStr == NULL || strcmp(includeSumValStr, "") == 0 || strlen(includeSumValStr) > 5 ) {
+		return NULL;
+	}
+
+	// extract it into a boolean, making sure it's either 'true' or 'false' first
+	bool includeSumVal;
+	if(strcmp(includeSumValStr, "true") == 0) {
+		includeSumVal = true;
+	} else if(strcmp(includeSumValStr, "false") == 0) {
+		includeSumVal = false;
+	} else {
+		return NULL;
+	}
+
+	// get summary if it should be inlcuded (min length, make sure it has proper tag)
+	if(includeSumVal) {
+		if(i+12 >= len-2 || strncmp(str+i, ",\"SUMMARY\":\"", 12) != 0) {
+			return NULL;
+		}
+		i += 12;
+		j = 0;
+		// parse char-by-char
+		while( i < len && str[i] != '\"') {
+			// account for escaped chars \\ and \"
+			if(str[i] == '\\') {
+				if(str[i+1] != '\\' && str[i+1] != '\"') {
+					return NULL;
+				}
+				i++; // to skip the current escape char '\'
+			}
+			// make sure \r\n occur together followed by SPACE or HTAB, then something else
+			else if(str[i] == '\r') {
+				if( i+2 > len || str[i+1] != '\n' || (str[i+2] != SPACE && str[i+2] != HTAB) ) {
+					return NULL;
+				}
+			} else if(str[i] == '\n') {
+				if( i-1 < 0 || str[i-1] != '\r' ) {
+					return NULL;
+				}
+			}
+			// it's valid, so add char to summary val
+			sumValStr[j++] = str[i++];
+		}
+		sumValStr[j] = '\0';
+
+		// make sure it parsed something (not too big), and that it stopped bc it was the end (i.e. \",},\0 chars are next)
+		if( sumValStr == NULL || strcmp(sumValStr, "") == 0 || 
+				i+2 > len || str[i] != '\"' || str[i+1] != '}' || str[i+2] != '\0' ) {
+			return NULL;
+		}
+
+	}
+
+	// create and return event w/ UID, creationDateTime, startDateTime, prop list init but empty (unless they want summmar), alm list init but empty
 	Event *ev = NULL;
 	ev = malloc(sizeof(Event));
+	// UID
 	strcpy(ev->UID, uidStr);
 	ev->UID[strlen(uidStr)] = '\0';
+	// DTSTAMP (date, time, UTC)
+	strcpy(ev->creationDateTime.date, dtstampVal->date);
+	ev->creationDateTime.date[strlen(dtstampVal->date)] = '\0';
+	strcpy(ev->creationDateTime.time, dtstampVal->time);
+	ev->creationDateTime.time[strlen(dtstampVal->time)] = '\0';
+	ev->creationDateTime.UTC = dtstampVal->UTC;
+	free(dtstampVal);
+	// DTSTART (date, time, UTC)
+	strcpy(ev->startDateTime.date, dtstartVal->date);
+	ev->startDateTime.date[strlen(dtstartVal->date)] = '\0';
+	strcpy(ev->startDateTime.time, dtstartVal->time);
+	ev->startDateTime.time[strlen(dtstartVal->time)] = '\0';
+	ev->startDateTime.UTC = dtstartVal->UTC;
+	free(dtstartVal);
+	// init prop list (check if they want summary included)
 	ev->properties = initializeList(*printProperty, *deleteProperty, *compareProperties);
+	if(includeSumVal){
+		// get the 'line' of SUMMARY first
+		char summaryLine[len];
+		strcpy(summaryLine, "SUMMARY:");
+		strcat(summaryLine, sumValStr);
+		summaryLine[8+strlen(sumValStr)] = '\0';
+		insertSorted(ev->properties, createProperty(summaryLine, 7));
+	}
+	// init alarm list (leave empty)
 	ev->alarms = initializeList(*printAlarm, *deleteAlarm, *compareAlarms);
 	return ev;
-	// "{\"UID\":\"value\"}"
+	// "{\"UID\":\"value\"}" --old from A2
+	// "{\"UID\":\"value\",\"DTSTAMP\":\"stampVal\",\"DTSTART\":\"startVal\",\"includeSUMMARY\":ynSUMMARY,\"SUMMARY\":\"sumVal\"}"
+	// "{\"UID\":\"v\",\"DTSTAMP\":\"\",\"DTSTART\":\"\",\"includeSUMMARY\":true,\"SUMMARY\":\"\"}" //+15 for each dtAsJSON (use parseDT and format like A1 content line when send it back); //min length = 102
 }
 
 /** Function to adding an Event struct to an existing Calendar struct

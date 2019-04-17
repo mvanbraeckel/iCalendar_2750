@@ -602,6 +602,213 @@ int ishex(char c) {
 	}
 }
 
+
+/** Function to converting an Alarm into a JSON string
+ *@pre Alarm is not NULL
+ *@post Alarm has not been modified in any way
+ *@return A string in JSON format
+ *@param alarm - a pointer to an Alarm struct
+ **/
+char* alarmToJSON(const Alarm* alarm) {
+	char* toReturn = NULL;
+	// make sure it exists
+	if(alarm == NULL) {
+		toReturn = malloc(3);
+		strcpy(toReturn, "{}");
+		toReturn[2] = '\0';
+		return toReturn;
+	}
+	
+	// get action (should only be AUDIO though)
+	char* actVal = NULL;							// need to free
+	actVal = stringToJSON(alarm->action);
+	
+	// get trigger
+	char* trigVal = NULL;							// need to free
+	trigVal = stringToJSON(alarm->trigger);
+	
+	// get #of properties
+	int propVal = 2;
+	if(alarm->properties != NULL) {
+		propVal += getLength(alarm->properties);
+	}
+
+	// create JSON string [39 + actVal len (max 200) + trigVal len + 20 = ~75 + (2 string len)]
+	toReturn = malloc(75 + strlen(actVal) + strlen(trigVal));
+	sprintf(toReturn, "{\"action\":\"%s\",\"trigger\":\"%s\",\"numProps\":%d}", actVal, trigVal, propVal);
+	toReturn[strlen(toReturn)] = '\0';
+	
+	// free temps before returning
+	free(actVal);
+	free(trigVal);
+	return toReturn;
+	// "{\"action\":\"actVal\",\"trigger\":\"trigVal\",\"numProps\":propval}"
+}
+
+/** Function to converting an Alarm list into a JSON string
+ *@pre Alarm list is not NULL
+ *@post Alarm list has not been modified in any way
+ *@return A string in JSON format
+ *@param alarmList - a pointer to an Alarm list
+ **/
+char* alarmListToJSON(const List* alarmList) {
+	char* toReturn = malloc(3);
+	// make sure it exists
+	if(alarmList == NULL) {
+		strcpy(toReturn, "[]");
+		toReturn[2] = '\0';
+		return toReturn;
+	}
+	// start the output string
+	toReturn[0] = '[';
+	toReturn[1] = '\0';
+
+	// loop through list, properly adding commas and reallocating when adding each new alarm JSON string
+	ListIterator almIter = createIterator((List*)alarmList);
+	Alarm* alm;
+	int counter = 0;
+
+	while( (alm = nextElement(&almIter)) != NULL ) {
+		// get curr alarm as JSON string, reallocate mem
+		char* almStr = alarmToJSON(alm);		// need to free
+		toReturn = realloc(toReturn, strlen(toReturn)+strlen(almStr)+5);
+
+		// appropriately add commas if necessary, then add curr alarm JSON string 
+		if(counter != 0) {
+			strcat(toReturn, ",");
+		}
+		strcat(toReturn, almStr);
+		toReturn[strlen(toReturn)] = '\0';
+
+		// free temp and iterate
+		free(almStr);
+		counter++;
+	}
+
+	// end return string, then return it
+	int len = strlen(toReturn);
+	toReturn[len] = ']';
+	toReturn[len+1] = '\0';
+	return toReturn;
+	// "[AlmtString1,AlmtString2,…,AlmtStringN]"
+}
+
+/** Function to converting a Property into a JSON string
+ *@pre Property is not NULL
+ *@post Property has not been modified in any way
+ *@return A string in JSON format
+ *@param property - a pointer to a Property struct
+ **/
+char* propertyToJSON(const Property* property) {
+	char* toReturn = NULL;
+	// make sure it exists
+	if(property == NULL) {
+		toReturn = malloc(3);
+		strcpy(toReturn, "{}");
+		toReturn[2] = '\0';
+		return toReturn;
+	}
+	
+	// get property name
+	char* nameVal = NULL;							// need to free
+	nameVal = stringToJSON(property->propName);
+
+	// get property description
+	char* descrVal = NULL;							// need to free
+	descrVal = stringToJSON(property->propDescr);
+
+	// create JSON string [31 + nameVal len (max 200) + descrVal len = ~35 + (2 string len)]
+	toReturn = malloc(35 + strlen(nameVal) + strlen(descrVal));
+	sprintf(toReturn, "{\"propName\":\"%s\",\"propDescr\":\"%s\"}", nameVal, descrVal);
+	toReturn[strlen(toReturn)] = '\0';
+	
+	// free temps before returning
+	free(nameVal);
+	free(descrVal);
+	return toReturn;
+	// "{\"propName\":\"nameVal\",\"propDescr\":\"descrVal\"}"
+}
+
+/** Function to converting a Property list into a JSON string
+ *@pre Property list is not NULL
+ *@post Property list has not been modified in any way
+ *@return A string in JSON format
+ *@param propertyList - a pointer to a Property list
+ **/
+char* propertyListToJSON(const List* propertyList) {
+	char* toReturn = malloc(3);
+	// make sure it exists
+	if(propertyList == NULL) {
+		strcpy(toReturn, "[]");
+		toReturn[2] = '\0';
+		return toReturn;
+	}
+	// start the output string
+	toReturn[0] = '[';
+	toReturn[1] = '\0';
+
+	// loop through list, properly adding commas and reallocating when adding each new property JSON string
+	ListIterator propIter = createIterator((List*)propertyList);
+	Property* prop;
+	int counter = 0;
+
+	while( (prop = nextElement(&propIter)) != NULL ) {
+		// get curr property as JSON string, reallocate mem
+		char* propStr = propertyToJSON(prop);		// need to free
+		toReturn = realloc(toReturn, strlen(toReturn)+strlen(propStr)+5);
+
+		// appropriately add commas if necessary, then add curr property JSON string 
+		if(counter != 0) {
+			strcat(toReturn, ",");
+		}
+		strcat(toReturn, propStr);
+		toReturn[strlen(toReturn)] = '\0';
+
+		// free temp and iterate
+		free(propStr);
+		counter++;
+	}
+
+	// end return string, then return it
+	int len = strlen(toReturn);
+	toReturn[len] = ']';
+	toReturn[len+1] = '\0';
+	return toReturn;
+	// "[PropString1,PropString2,…,PropStringN]"
+}
+
+/** Function to converting a string into a JSON-readied string (account for '\' and '"')
+ *@pre str is not NULL
+ *@post str has not been modified in any way
+ *@return An allocated string readied for JSON format
+ *@param str - a the string to be prepped and readied
+ **/
+char* stringToJSON(const char* str) {
+	char* prepStr = NULL;
+	if(str == NULL) {
+		prepStr = malloc(1);
+		prepStr[0] = '\0';
+	} else {
+		// count number of backslashes
+		int len = strlen(str);
+		int c = 0;
+		for(int i = 0; i < len; i++) {
+			if(str[i] == '\\' || str[i] == '\"') c++;
+		}
+		// create mem, add one char at a time to account for escaping chars
+		prepStr = calloc(len+c+1, sizeof(char));
+		int j = 0;
+		for(int i = 0; i < len; i++) {
+			if(str[i] == '\\' || str[i] == '\"') {
+				prepStr[j++] = '\\';
+			}
+			prepStr[j++] = str[i];
+		}
+		prepStr[j] = '\0';
+	}
+	return prepStr;
+}
+
 // ======================= ADD EVENT TESTING HELPER =======================
 
 /**
@@ -661,7 +868,7 @@ Event* cloneEvent(Event *toClone) {
 		strcpy(tempProp->propDescr, prop->propDescr);
 		tempProp->propDescr[strlen(prop->propDescr)] = '\0';
 		// add to list
-		insertBack(ev->properties, tempProp);
+		insertSorted(ev->properties, tempProp);
 		// do not free
 	}
 
@@ -692,14 +899,242 @@ Event* cloneEvent(Event *toClone) {
 			strcpy(tempAlmProp->propDescr, almProp->propDescr);
 			tempAlmProp->propDescr[strlen(almProp->propDescr)] = '\0';
 			// add to list
-			insertBack(ev->properties, tempAlmProp);
+			insertSorted(ev->properties, tempAlmProp);
 			// do not free
 		}
 
 		// add to list
-		insertBack(ev->alarms, tempAlm);
+		insertSorted(ev->alarms, tempAlm);
 		// do not free
 	}
 
 	return ev;
+}
+
+// ============================== A3 WRAPPERS =============================
+
+/**
+ * Extract summary info from an iCal file
+ * @param char* dirFilename -a string of the iCal directory attached to the filename we want
+ * @return a stringified JSON representing the summary info of the iCal file
+ */
+char* a3getFileLogPanelTableInfo(char* dirFilename) {
+	// declare variables
+	Calendar *myCal = NULL;
+
+	// try to create the calendar, then validate it, making sure each was successful
+	ICalErrorCode err = createCalendar(dirFilename, &myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	} 
+	err = validateCalendar(myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	} 
+	
+	// it it's good, get the data first, then delete the iCal before leaving
+	char* rowInfo = calendarToJSON(myCal);
+	deleteCalendar(myCal);
+	return rowInfo;
+}
+
+/**
+ * Extract event list from an iCal file
+ * @param char* dirFilename -a string of the iCal directory attached to the filename we want
+ * @return a stringified JSON representing the event list of the iCal file
+ */
+char* a3getEventList(char* dirFilename) {
+	// declare variables
+	Calendar *myCal = NULL;
+
+	// try to create the calendar, then validate it, making sure each was successful
+	ICalErrorCode err = createCalendar(dirFilename, &myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	} 
+	err = validateCalendar(myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	}
+	
+	// it it's good, get the data first, then delete the iCal before leaving
+	char* evListJSONstr = eventListToJSON(myCal->events);
+	deleteCalendar(myCal);
+	return evListJSONstr;
+}
+
+/**
+ * Extract property list from an event in an iCal file
+ * @param char* dirFilename -a string of the iCal directory attached to the filename we want
+ * @return a stringified JSON representing the property list of the designated event in the iCal file
+ */
+char* a3getPropertyList(char *dirFilename, int eventNum) {
+	// declare variables
+	Calendar *myCal = NULL;
+
+	// try to create the calendar, then validate it, making sure each was successful
+	ICalErrorCode err = createCalendar(dirFilename, &myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	} 
+	err = validateCalendar(myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	}
+	
+	// it it's good, get the data first, then delete the iCal before leaving
+	char* propListJSONstr = NULL;
+	int i = 0;
+	bool match = false;
+
+	ListIterator evPropIter = createIterator(myCal->events);
+	Event* ev;
+	// must loop through to find the correct event first (based on number)
+	while( (ev = nextElement(&evPropIter)) != NULL ) {
+		if(i++ == eventNum) {
+			match = true;
+			propListJSONstr = propertyListToJSON(ev->properties);
+			break;
+		}
+	}
+	// check if a matching event was found (based on number)
+	if(!match) {
+		deleteCalendar(myCal);
+		return NULL;
+	}
+	deleteCalendar(myCal);
+	return propListJSONstr;
+}
+
+/**
+ * Extract alarm list from an event in an iCal file
+ * @param char* dirFilename -a string of the iCal directory attached to the filename we want
+ * @return a stringified JSON representing the alarm list of the designated event in the iCal file
+ */
+char* a3getAlarmList(char *dirFilename, int eventNum) {
+	// declare variables
+	Calendar *myCal = NULL;
+
+	// try to create the calendar, then validate it, making sure each was successful
+	ICalErrorCode err = createCalendar(dirFilename, &myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	} 
+	err = validateCalendar(myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		return NULL;
+	}
+	
+	// it it's good, get the data first, then delete the iCal before leaving
+	char* almListJSONstr = NULL;
+	int i = 0;
+	bool match = false;
+
+	// must loop through to find the correct event first
+	ListIterator evPropIter = createIterator(myCal->events);
+	Event* ev;
+	while( (ev = nextElement(&evPropIter)) != NULL ) {
+		if(i++ == eventNum) {
+			match = true;
+			almListJSONstr = alarmListToJSON(ev->alarms);
+			break;
+		}
+	}
+	// check if a matching event was found (based on number)
+	if(!match) {
+		deleteCalendar(myCal);
+		return NULL;
+	}
+	deleteCalendar(myCal);
+	return almListJSONstr;
+}
+
+/**
+ * Extract calendar info and event info from a JSON to create a new iCal file
+ * @param char* dirFilename -a string of the iCal directory attached to the filename we want
+ * @param char* calAsJSON -a stringified JSON representing the necessary calendar info
+ * @parma char* eventAsJSON -a stringified JSON representing the necessary event info (single event)
+ * @return char* printed (human-readable) ICalErrorCode indicating what happened ("OK" for success)
+ */
+char* a3CreateCalendar(char *dirFilename, char* calAsJSON, char* eventAsJSON) {
+	// declare variables
+	Calendar *myCal = NULL;
+	Event *myEv = NULL;
+	
+	// turn JSONs into structs
+	myCal = JSONtoCalendar(calAsJSON);
+	myEv = JSONtoEvent(eventAsJSON);
+
+	// check if it worked
+	if(myCal == NULL || myEv == NULL) {
+		deleteCalendar(myCal);
+		deleteEvent((Event*)myEv);
+		char* toReturn = malloc(40);
+		strcpy(toReturn, "Error: calendar information is invalid");
+		return toReturn;
+	}
+
+	// add the event to the calendar, then validate it
+	insertSorted(myCal->events, (Event*)myEv);
+	ICalErrorCode err = validateCalendar(myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		char* toReturn = printError(err);
+		return toReturn;
+	}
+
+	// write the calendar to the new file (the 'error' will be OK or something bad, caught in JS)
+	err = writeCalendar(dirFilename, myCal);
+
+	deleteCalendar(myCal);
+	char* toReturn = printError(err);
+	return toReturn;
+}
+
+/**
+ * Extract  event info from a JSON to add it to the specified existing iCal file
+ * @param char* dirFilename -a string of the iCal directory attached to the filename we want to add the event to
+ * @parma char* eventAsJSON -a stringified JSON representing the necessary event info (single event)
+ * @return char* printed (human-readable) ICalErrorCode indicating what happened ("OK" for success)
+ */
+char* a3AddEventToCalendar(char *dirFilename, char* eventAsJSON) {
+	// declare variables
+	Calendar *myCal = NULL;
+	Event *myEv = NULL;
+	
+	// turn JSON into event struct
+	myEv = JSONtoEvent(eventAsJSON);
+
+	// check if it worked
+	if(myEv == NULL) {
+		deleteEvent((Event*)myEv);
+		char* toReturn = malloc(40);
+		strcpy(toReturn, "Error: event information is invalid");
+		return toReturn;
+	}
+
+	// try to create the calendar, add the event, then validate it, making sure it was all successful
+	ICalErrorCode err = createCalendar(dirFilename, &myCal);
+	insertSorted(myCal->events, (Event*)myEv);
+	err = validateCalendar(myCal);
+	if(err != OK) {
+		deleteCalendar(myCal);
+		char* toReturn = printError(err);
+		return toReturn;
+	}
+
+	// write the calendar to the new file (the 'error' will be OK or something bad, caught in JS)
+	err = writeCalendar(dirFilename, myCal);
+
+	deleteCalendar(myCal);
+	char* toReturn = printError(err);
+	return toReturn;
 }
